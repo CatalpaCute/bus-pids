@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>韶关公交 PIDS 模拟屏</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23002b54'/%3E%3Cpath d='M16 18h32a4 4 0 0 1 4 4v16a10 10 0 0 1-10 10H22A10 10 0 0 1 12 38V22a4 4 0 0 1 4-4Z' fill='%23fff'/%3E%3Ccircle cx='24' cy='49' r='4' fill='%23fff'/%3E%3Ccircle cx='40' cy='49' r='4' fill='%23fff'/%3E%3Cpath d='M20 24h24v10H20z' fill='%23002b54'/%3E%3C/svg%3E">
+
+    <link rel="stylesheet" href="./assets/css/reset.css">
+    <link rel="stylesheet" href="./assets/css/overlay.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="stylesheet" href="./assets/css/header-bar.css">
+    <link rel="stylesheet" href="./assets/font/font.css">
+
+    <script src="./assets/lib/vue@3.5.17/dist/vue.global.prod.js"></script>
+    <script src="./assets/lib/vue-i18n@11.1.9/dist/vue-i18n.global.prod.js"></script>
+    <script src="./assets/lib/jquery@3.7.1/dist/jquery.min.js"></script>
+
+    <script src="./assets/js/main.js" type="module"></script>
+
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="韶关公交 PIDS 模拟屏">
+    <meta property="og:description" content="参考 MTR PIDS 视觉风格改造的韶关公交到站屏">
+</head>
+
+<body>
+    <div id="width-check-wrapper">
+        <span id="check-content"></span>
+    </div>
+    <div id="overlay" class="hidden">
+        <section class="intro">
+            <div id="lang">
+                <h2>{{ $t('intro.languages') }}</h2>
+                <div id="lang-select">
+                    <button :class="locale == $i18n.locale ? 'selected' : null" v-for="locale in $i18n.availableLocales"
+                        :key="`locale-${locale}`" @click="$i18n.locale = locale">{{ $t(`intro.language.${locale}`)
+                        }}</button>
+                </div>
+            </div>
+
+            <h1>{{ $t('intro.welcome') }}</h1>
+            <p>{{ $t('intro.description_1') }}</p>
+            <p>{{ $t('intro.description_2') }}</p>
+            <p>{{ $t('intro.description_3') }}</p>
+            <p>{{ $t('intro.disclaimer') }}</p>
+            <p>{{ $t('intro.enquiries') }}</p>
+            <a href="https://github.com/HKTSS/mtr-pids">{{ $t('intro.oss') }}</a>
+        </section>
+        <section class="settings">
+            <h1>{{ $t('settings.title') }}</h1>
+            <form>
+                <fieldset>
+                    <legend>{{ $t('settings.sections.data.title') }}</legend>
+                    <div>
+                        <label for="source">{{ $t('settings.sections.data.source.name') }}</label>
+                        <select id="source" v-model="dataSourceReference">
+                            <option value="ONLINE">{{ $t('settings.sections.data.source.online') }}</option>
+                            <option value="OFFLINE">{{ $t('settings.sections.data.source.offline') }}</option>
+                        </select>
+                    </div>
+
+                    <div v-if="dataSourceReference == 'ONLINE'">
+                        <div>
+                            <label for="proxy-base">{{ $t('settings.sections.data.proxy.name') }}</label>
+                            <input id="proxy-base" name="proxy-base" type="url" v-model="proxyBaseUrlReference"
+                                :placeholder="$t('settings.sections.data.proxy.placeholder')">
+                            <p class="section-box">{{ $t('settings.sections.data.proxy.hint') }}</p>
+                        </div>
+                        <div>
+                            <label for="route">{{ $t('settings.sections.data.route') }}</label>
+                            <select id="route" name="route" v-model="routeReference">
+                                <option v-for="line in lines" :key="line.lineNo" :value="line.lineNo">{{ line.displayName }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="station">{{ $t('settings.sections.data.station') }}</label>
+                            <select id="station" name="station" v-model="stationReference">
+                                <option v-for="stationName in stationOptions" :key="stationName" :value="stationName">
+                                    {{ stationName }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="direction">{{ $t('settings.sections.data.direction.name') }}</label>
+                            <select id="direction" name="direction" v-model="directionReference">
+                                <option v-for="direction in directionOptions" :key="direction.value" :value="direction.value">
+                                    {{ direction.label }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <fieldset>
+                            <legend>{{ $t('settings.sections.data.custom.name') }}</legend>
+                            <p class="section-box">
+                                {{ $t('settings.sections.data.custom.tips_1') }}
+                                <br>
+                                {{ $t('settings.sections.data.custom.tips_2') }}
+                            </p>
+                            <table>
+                                <tr>
+                                    <td>{{ $t('settings.sections.data.custom.destination') }}</td>
+                                    <td class="centeredItem">{{ $t('settings.sections.data.custom.platform') }}</td>
+                                    <td class="centeredItem">{{ $t('settings.sections.data.custom.eta') }}</td>
+                                </tr>
+                                <tr v-for="(arrival, idx) in API.customArrivalData">
+                                    <td><input type="text" autocomplete="off" :id="`destination-${idx}`" :name="`destination-${idx}`" :aria-label="`${$t('settings.sections.data.custom.destination')} ${idx + 1}`" v-model="arrival.dest"></td>
+                                    <td><input type="text" size="1" maxlength="1" autocomplete="off" :id="`platform-${idx}`" :name="`platform-${idx}`" :aria-label="`${$t('settings.sections.data.custom.platform')} ${idx + 1}`" v-model="arrival.plat"></td>
+                                    <td><input type="number" size="2" min="0" autocomplete="off" :id="`ttnt-${idx}`" :name="`ttnt-${idx}`" :aria-label="`${$t('settings.sections.data.custom.eta')} ${idx + 1}`" v-model="arrival.ttnt"></td>
+                                </tr>
+                            </table>
+                        </fieldset>
+                        <section>
+                            <label for="route-color">{{ $t('settings.sections.data.custom.route_color') }}</label>
+                            <input type="color" maxlength="6" size="6" id="route-color" name="route-color"
+                                v-model="selectedLine.color"></input>
+                        </section>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>{{ $t('settings.sections.display.title') }}</legend>
+                    <section>
+                        <label for="adhoc">{{ $t('settings.sections.display.adhoc.name') }}</label>
+                        <select id="adhoc" name="adhoc" v-model="SETTINGS.adhoc">
+                            <option v-for="adhoc in promotionData.special" :key="adhoc.id" :value="adhoc.id">{{ $t(`settings.sections.display.adhoc.${adhoc.id}`) }}</option>
+                        </select>
+                    </section>
+                    <section>
+                        <label>{{ $t('settings.sections.display.mode.name') }}</label>
+                        <select id="display-mode" name="display-mode" v-model="SETTINGS.displayMode">
+                            <option v-for="[key, mode] in Object.entries(DisplayMode)" :key="key" :value="mode">{{ $t(`settings.sections.display.mode.${key}`) }}</option>
+                        </select>
+                    </section>
+                    <section>
+                        <label>{{ $t('settings.sections.display.first_train_cutoff.name') }}</label>
+                        <input id="first-train-cutoff" name="first-train-cutoff" type="number" min="0" step="1" v-model.number="firstTrainCutoffReference"/>
+                    </section>
+                    <section>
+                        <div>
+                            <input id="show-platform" name="show-platform" type="checkbox" v-model="SETTINGS.showPlatform"></input>
+                            <label for="show-platform" attr-inline>{{ $t('settings.sections.display.platform_number') }}</label>
+                        </div>
+                        <div>
+                            <input id="route-header" name="route-header" type="checkbox" v-model="SETTINGS.rtHeader"></input>
+                            <label for="route-header" attr-inline>{{ $t('settings.sections.display.line') }}</label>
+                        </div>
+                    </section>
+                </fieldset>
+                <div @click="toggleFullscreen">
+                    <button>{{ $t('settings.sections.generic.fullscreen.' + (isFullscreen ? "entered" : "exited") )
+                        }}</button>
+                </div>
+                <div>
+                    <button @click="close">{{ $t('settings.sections.generic.start') }}</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <main>
+        <div id="header-bar">
+            <button id="configure-button" title="打开设置">打开设置</button>
+            <div class="t2">
+                <span class="rtname"></span>
+            </div>
+            <div class="t1 weather">
+                <span id="weather-icon"><noscript>需要启用 JavaScript</noscript></span>
+                <span id="temperature" class="notranslate"></span>
+            </div>
+            <div class="t1 clock">
+            </div>
+        </div>
+
+        <div id="promo">
+        </div>
+
+        <div id="arrivals">
+            <div id="arrivalBackground">
+                <div>&nbsp</div>
+                <div>&nbsp</div>
+                <div>&nbsp</div>
+                <div>&nbsp</div>
+            </div>
+            <table id="arrivalOverlay">
+                <tr>
+                    <td class="destination scalable"></td>
+                    <td class="plat"><span class="platcircle"></span></td>
+                    <td class="eta scalable"></td>
+                </tr>
+                <tr>
+                    <td class="destination scalable"></td>
+                    <td class="plat"><span class="platcircle"></span></td>
+                    <td class="eta scalable"></td>
+                </tr>
+                <tr>
+                    <td class="destination scalable"></td>
+                    <td class="plat"><span class="platcircle"></span></td>
+                    <td class="eta scalable"></td>
+                </tr>
+                <tr>
+                    <td class="destination scalable"></td>
+                    <td class="plat"><span class="platcircle"></span></td>
+                    <td class="eta scalable"></td>
+                </tr>
+            </table>
+            <div class="divider"></div>
+        </div>
+    </main>
+</body>
+<script src="./assets/js/local_storage.js" type="module"></script>
+<script src="./assets/js/config/new_config.js" type="module"></script>
+
+</html>

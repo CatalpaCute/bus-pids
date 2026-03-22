@@ -1,0 +1,191 @@
+:root {
+    --font-arrivals: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", "Noto Serif HK", serif;
+    --font-platformcircle: "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Noto Sans", sans-serif;
+    --font-size: 12vmin;
+    --eta-font-size: 13vmin;
+    --route-color: transparent;
+    --font-weight: 600;
+    --platcircle-family: "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Noto Sans", sans-serif;
+    --dest-family: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", "Noto Serif HK", serif;
+    --eta-family: "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Noto Sans", sans-serif;
+    --eta-width: 260px;
+    --aqua: #c8ebfa;
+
+    /* Colors */
+    --mtr-blue: #002b54;
+    --mtr-red: #af2948;
+    --notice-blue: #b0d7fc;
+    
+    /* Units */
+    --px-100: 5.2vw;
+    --px-50: 2.6vw;
+}
+
+main {
+    font-family: var(--font-arrivals);
+    
+    /* We have multiple fallback font with slightly different available weight, let's not have the browser force change the weight for us */
+    font-synthesis: none;
+}
+
+b {
+    font-weight: 600;
+}
+
+#arrivals {
+    position: absolute;
+    top: var(--title-height);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(100vh - var(--title-height));
+}
+
+#arrivalOverlay {
+    position: absolute;
+    table-layout: fixed;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: calc(100vw - var(--px-100) - var(--px-100));
+    height: 100%;
+}
+
+#arrivalOverlay tr, #arrivalBackground > div {
+    height: calc(calc(100vh - var(--title-height)) / 4);
+}
+
+#arrivalOverlay tr td {
+    padding: 0;
+    margin: 0;
+    vertical-align: middle;
+}
+
+#arrivalBackground {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    /* display: flex; */
+    flex-direction: column;
+}
+
+#arrivalBackground div:nth-child(even) {
+    background-color: var(--aqua);
+}
+
+.divider {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 0.5vh;
+    background: black;
+}
+
+#width-check-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: 100%;
+    z-index: 100;
+    overflow: hidden;
+    visibility: hidden;
+}
+
+#check-content {
+    display: inline-block;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.lrt-route {
+    display: inline-block;
+    width: 11vw;
+    min-width: 128px;
+    text-align: center;
+    vertical-align: middle;
+    background-color: white;
+    font-size: 6vh;
+    color: black;
+    overflow: visible;
+    border-radius: 50vh;
+    border: 2.2vh solid orange;
+    outline: 1.2vh solid black;
+    margin: 0 3vw 0 1vw;
+}
+
+.destination {
+    font-size: var(--font-size);
+    font-family: var(--dest-family);
+    font-weight: var(--font-weight);
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.destination-name {
+    display: inline-block;
+}
+
+.plat {
+    width: 11vmin;
+    font-family: var(--platcircle-family);
+}
+
+.plat-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    height: 11vmin;
+    width: 11vmin;
+    border-radius: 50%;
+    font-size: 7.2vmin;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+}
+
+#promo {
+    position: absolute;
+    z-index: 2;
+    top: var(--title-height);
+    left: 0;
+    right: 0;
+    height: calc(100vh - var(--title-height) - ((100vh - var(--title-height)) / 4));
+    background-color: #000000;
+}
+
+#promo.promo-full {
+    height: calc(100vh - var(--title-height));
+}
+
+#promo iframe {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#promo.fullscreen {
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.eta {
+    font-family: var(--eta-family);
+    font-weight: var(--font-weight);
+    font-size: var(--eta-font-size);
+    min-width: max-content;
+    width: calc(calc(1vw + 1vh) * 14.5);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.etamin, .via-zh {
+    font-size: 0.6333em;
+}
+
+.marquee {
+    width: max-content;
+}
