@@ -16,6 +16,7 @@ function read() {
 
   try {
     const savedSettings = JSON.parse(raw);
+    SETTINGS.city = savedSettings.city ?? SETTINGS.city;
     SETTINGS.showPlatform = savedSettings.showPlatform ?? SETTINGS.showPlatform;
     SETTINGS.rtHeader = savedSettings.rtHeader ?? SETTINGS.rtHeader;
     SETTINGS.displayMode = savedSettings.displayMode ?? SETTINGS.displayMode;

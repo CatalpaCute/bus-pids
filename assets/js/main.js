@@ -3,7 +3,7 @@
 import ETA_CONTROLLER from './eta_controller.js';
 import SETTINGS from './static/settings.js';
 import UI from './ui.js';
-import { ensureValidSettings, loadManifest } from './static/data.js';
+import { ensureValidSettings, getCityConfig, loadCityRegistry, loadManifest } from './static/data.js';
 
 let etaData = [];
 let isFetching = false;
@@ -18,6 +18,10 @@ function parseQuery() {
 
   if (params.has('proxy')) {
     SETTINGS.proxyBaseUrl = params.get('proxy') || '';
+  }
+
+  if (params.has('city')) {
+    SETTINGS.city = params.get('city') || SETTINGS.city;
   }
 }
 
@@ -45,7 +49,11 @@ async function updateETA(force = false) {
 
 $(document).ready(async function ready() {
   parseQuery();
-  await loadManifest();
+  await loadCityRegistry();
+  if (!getCityConfig(SETTINGS.city)) {
+    SETTINGS.city = 'shaoguan';
+  }
+  await loadManifest(SETTINGS.city);
   ensureValidSettings(SETTINGS);
   UI.setup();
   UI.draw([]);

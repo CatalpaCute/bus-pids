@@ -5,10 +5,10 @@ export default {
       zh: '中文',
       en: 'English'
     },
-    welcome: '韶关公交 PIDS 模拟屏',
-    description_1: '这个项目参考了 HKTSS 的 MTR PIDS Simulator，并把数据源改成了韶关公交车来了 H5 接口。',
-    description_2: '操作方式保持同一套逻辑：先选线路，再选站点，再决定看单方向、混排或双方向分屏。',
-    description_3: '由于车来了接口没有开放浏览器跨域，GitHub Pages 版本需要额外配置一个轻量代理地址才能读取实时数据。',
+    welcome: '城市公交 PIDS 模拟屏',
+    description_1: '这个项目参考了 HKTSS 的 MTR PIDS Simulator，并把数据层改成了车来了 H5 公交接口。',
+    description_2: '现在支持按城市切换，再依次选择线路、车站和显示方向，整体操作方式仍然保持同一套逻辑。',
+    description_3: '由于车来了接口没有开放浏览器跨域，GitHub Pages 版本仍然需要额外配置一个轻量代理地址才能读取实时数据。',
     disclaimer: '本项目仅供学习和个人研究使用，请不要高频抓取或用于任何违规用途。',
     enquiries: '如果只想先看界面效果，可以切到离线模式，手动填入终点、方向圆标和到站时间。',
     oss: '参考项目与源码说明'
@@ -23,6 +23,7 @@ export default {
           online: '在线实时',
           offline: '离线自定义'
         },
+        city: '城市',
         route: '公交线路',
         station: '停靠车站',
         direction: {

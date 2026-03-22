@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>韶关公交 PIDS 模拟屏</title>
+    <title>城市公交 PIDS 模拟屏</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23002b54'/%3E%3Cpath d='M16 18h32a4 4 0 0 1 4 4v16a10 10 0 0 1-10 10H22A10 10 0 0 1 12 38V22a4 4 0 0 1 4-4Z' fill='%23fff'/%3E%3Ccircle cx='24' cy='49' r='4' fill='%23fff'/%3E%3Ccircle cx='40' cy='49' r='4' fill='%23fff'/%3E%3Cpath d='M20 24h24v10H20z' fill='%23002b54'/%3E%3C/svg%3E">
 
     <link rel="stylesheet" href="./assets/css/reset.css">
@@ -21,8 +21,8 @@
 
     <meta property="og:locale" content="zh_CN" />
     <meta property="og:type" content="website">
-    <meta property="og:title" content="韶关公交 PIDS 模拟屏">
-    <meta property="og:description" content="参考 MTR PIDS 视觉风格改造的韶关公交到站屏">
+    <meta property="og:title" content="城市公交 PIDS 模拟屏">
+    <meta property="og:description" content="参考 MTR PIDS 视觉结构改造的多城市公交到站屏">
 </head>
 
 <body>
@@ -67,6 +67,12 @@
                             <input id="proxy-base" name="proxy-base" type="url" v-model="proxyBaseUrlReference"
                                 :placeholder="$t('settings.sections.data.proxy.placeholder')">
                             <p class="section-box">{{ $t('settings.sections.data.proxy.hint') }}</p>
+                        </div>
+                        <div>
+                            <label for="city">{{ $t('settings.sections.data.city') }}</label>
+                            <select id="city" name="city" v-model="cityReference">
+                                <option v-for="city in cities" :key="city.slug" :value="city.slug">{{ city.name }}</option>
+                            </select>
                         </div>
                         <div>
                             <label for="route">{{ $t('settings.sections.data.route') }}</label>

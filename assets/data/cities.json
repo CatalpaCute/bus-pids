@@ -1,0 +1,60 @@
+{
+  "defaultCity": "shaoguan",
+  "cities": [
+    {
+      "slug": "shaoguan",
+      "name": "韶关",
+      "englishName": "Shaoguan",
+      "cityId": "241",
+      "src": "wechat_shaoguan",
+      "weather": {
+        "latitude": 24.8017,
+        "longitude": 113.597
+      }
+    },
+    {
+      "slug": "beijing",
+      "name": "北京",
+      "englishName": "Beijing",
+      "cityId": "027",
+      "src": "wechat_shaoguan",
+      "weather": {
+        "latitude": 39.9042,
+        "longitude": 116.4074
+      }
+    },
+    {
+      "slug": "shanghai",
+      "name": "上海",
+      "englishName": "Shanghai",
+      "cityId": "034",
+      "src": "wechat_shaoguan",
+      "weather": {
+        "latitude": 31.2304,
+        "longitude": 121.4737
+      }
+    },
+    {
+      "slug": "guangzhou",
+      "name": "广州",
+      "englishName": "Guangzhou",
+      "cityId": "040",
+      "src": "wechat_shaoguan",
+      "weather": {
+        "latitude": 23.1291,
+        "longitude": 113.2644
+      }
+    },
+    {
+      "slug": "shenzhen",
+      "name": "深圳",
+      "englishName": "Shenzhen",
+      "cityId": "014",
+      "src": "wechat_shaoguan",
+      "weather": {
+        "latitude": 22.5431,
+        "longitude": 114.0579
+      }
+    }
+  ]
+}

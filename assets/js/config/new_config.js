@@ -7,10 +7,13 @@ import {
   DisplayMode,
   promotionData,
   ensureValidSettings,
+  getCities,
+  getCityConfig,
   getDirectionOptions,
   getLine,
   getLines,
   getStationOptions,
+  loadCityRegistry,
   loadManifest
 } from '../static/data.js';
 import API from '../eta_controller.js';
@@ -18,7 +21,8 @@ import { save } from '../local_storage.js';
 
 const { createApp, ref, computed, watch } = Vue;
 
-await loadManifest();
+await loadCityRegistry();
+await loadManifest(SETTINGS.city);
 ensureValidSettings(SETTINGS);
 
 const i18n = VueI18n.createI18n({
@@ -33,6 +37,7 @@ const i18n = VueI18n.createI18n({
 
 const app = createApp({
   setup() {
+    const cityReference = ref(SETTINGS.city);
     const routeReference = ref(SETTINGS.route);
     const stationReference = ref(SETTINGS.station);
     const directionReference = ref(SETTINGS.direction);
@@ -40,12 +45,30 @@ const app = createApp({
     const firstTrainCutoffReference = ref(SETTINGS.firstTrainCutoff);
     const proxyBaseUrlReference = ref(SETTINGS.proxyBaseUrl);
     const isFullscreen = ref(document.fullscreenElement != null);
+    const manifestVersion = ref(0);
     const { locale } = VueI18n.useI18n();
 
-    const lines = computed(() => getLines());
-    const selectedLine = computed(() => getLine(routeReference.value));
-    const stationOptions = computed(() => getStationOptions(routeReference.value));
-    const directionOptions = computed(() => getDirectionOptions(routeReference.value, stationReference.value));
+    const cities = computed(() => {
+      manifestVersion.value;
+      return getCities();
+    });
+    const lines = computed(() => {
+      manifestVersion.value;
+      return getLines();
+    });
+    const selectedLine = computed(() => {
+      manifestVersion.value;
+      return getLine(routeReference.value);
+    });
+    const selectedCity = computed(() => getCityConfig(cityReference.value));
+    const stationOptions = computed(() => {
+      manifestVersion.value;
+      return getStationOptions(routeReference.value);
+    });
+    const directionOptions = computed(() => {
+      manifestVersion.value;
+      return getDirectionOptions(routeReference.value, stationReference.value);
+    });
 
     function syncDirection() {
       const options = directionOptions.value;
@@ -54,6 +77,19 @@ const app = createApp({
       }
       SETTINGS.direction = directionReference.value;
     }
+
+    watch(cityReference, async (newValue) => {
+      if (!getCityConfig(newValue)) {
+        return;
+      }
+      SETTINGS.city = newValue;
+      await loadManifest(newValue);
+      manifestVersion.value += 1;
+      ensureValidSettings(SETTINGS);
+      routeReference.value = SETTINGS.route;
+      stationReference.value = SETTINGS.station;
+      directionReference.value = SETTINGS.direction;
+    });
 
     watch(routeReference, (newValue) => {
       SETTINGS.route = newValue;
@@ -108,10 +144,13 @@ const app = createApp({
       promotionData,
       DisplayMode,
       API,
+      cities,
       lines,
+      selectedCity,
       selectedLine,
       stationOptions,
       directionOptions,
+      cityReference,
       routeReference,
       stationReference,
       directionReference,

@@ -3,7 +3,9 @@
 import { fetchWeatherData } from './weather_controller.js';
 import SETTINGS from './static/settings.js';
 import UI from './ui.js';
-import { getLineTitle } from './static/data.js';
+import { getCurrentCitySlug, getLineTitle } from './static/data.js';
+
+let lastWeatherCitySlug = '';
 
 function updateClock() {
   const currDate = new Date();
@@ -18,6 +20,7 @@ function updateClock() {
 }
 
 async function updateWeather() {
+  lastWeatherCitySlug = getCurrentCitySlug();
   const weatherData = await fetchWeatherData();
   if (!weatherData) {
     return;
@@ -45,6 +48,9 @@ function updateHeader() {
 }
 
 function draw() {
+  if (lastWeatherCitySlug !== getCurrentCitySlug()) {
+    updateWeather();
+  }
   updateHeader();
   updateClock();
 }

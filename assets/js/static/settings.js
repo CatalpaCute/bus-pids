@@ -1,6 +1,7 @@
 'use strict';
 
 const settings = {
+  city: 'shaoguan',
   direction: '',
   debugMode: false,
   displayMode: 'NORMAL',

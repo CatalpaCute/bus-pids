@@ -1,29 +1,37 @@
-# 韶关公交 PIDS 模拟屏
+# 城市公交 PIDS 模拟屏
 
-这是一个参考 [HKTSS/mtr-pids](https://github.com/HKTSS/mtr-pids) 视觉结构改造出来的韶关公交到站屏项目。
+这是一个参考 [HKTSS/mtr-pids](https://github.com/HKTSS/mtr-pids) 视觉结构改造出来的多城市公交到站屏项目。
 
-页面层继续沿用“顶部状态栏 + 提示页 + 四行到站信息 + 配置浮层”这套交互方式，但底层数据已经改成韶关公交车来了 H5 接口，并把线路和站点选择改成更适合公交场景的方式：
+页面层继续沿用“顶部状态栏 + 提示页 + 四行到站信息 + 配置浮层”这套交互方式，但数据层已经改成了车来了 H5 公交接口，并支持先选城市，再选线路、车站和方向。
 
-- 先选公交线路号
-- 再选车站名
-- 再选单方向、全部方向或双方向分屏
+当前内置城市：
+
+- 韶关
+- 北京
+- 上海
+- 广州
+- 深圳
 
 ## 项目结构
 
 - `index.html`
   前端入口，适合直接托管到 GitHub Pages。
-- `assets/data/shaoguan-routes.json`
-  线路静态清单，由脚本生成，负责驱动线路、站点、方向下拉。
+- `assets/data/cities.json`
+  城市注册表，维护 `slug / cityId / src / 天气坐标`。
+- `assets/data/manifests/*.json`
+  分城市线路清单，每个城市单独一份，前端按城市懒加载。
 - `assets/js/static/data.js`
-  公交数据模型、清单读取、方向选项和界面提示配置。
+  城市清单读取、线路清单切换、站点顺序和方向选项逻辑。
 - `assets/js/static/eta_api.js`
-  实时数据入口，负责调用代理并转换成屏幕渲染所需的统一结构。
+  实时数据入口，负责把当前城市的 `cityId`、`src` 和线路参数一起带给代理。
 - `proxy/local-proxy.js`
   本地 Node 代理，适合开发和自测。
 - `proxy/cloudflare-worker.js`
   Cloudflare Worker 版本代理，适合给 GitHub Pages 提供线上实时数据。
+- `scripts/build-city-manifests.js`
+  从车来了接口拉取多城市全量线路和站序，生成所有 manifest。
 - `scripts/build-shaoguan-manifest.js`
-  从车来了接口拉全量线路和站序，重新生成韶关线路清单。
+  兼容旧命令的包装脚本，只重建韶关清单。
 
 ## 为什么需要代理
 
@@ -34,14 +42,10 @@
 
 所以这个项目把实时链路拆成了两层：
 
-1. GitHub Pages 托管静态页面和线路清单
-2. 一个很薄的代理负责转发 `encryptedLineDetail`、补请求头、生成签名、解密返回体
+1. GitHub Pages 托管静态页面和分城市线路清单
+2. 一个很薄的代理负责转发请求、生成 `cryptoSign`、解密 `encryptResult`
 
-页面配置里的“实时代理地址”填的就是这个代理服务根地址，前端会请求：
-
-```text
-<你的代理地址>/api/station-detail
-```
+页面配置里的“实时代理地址”填的就是这个代理服务根地址。
 
 ## 本地运行
 
@@ -50,8 +54,6 @@
 ```bash
 python -m http.server 4173
 ```
-
-或任何你习惯的静态服务器都可以。
 
 ### 2. 启动本地代理
 
@@ -62,32 +64,59 @@ node proxy/local-proxy.js
 默认监听：
 
 ```text
-http://127.0.0.1:8787
+http://127.0.0.1:8788
 ```
 
 页面里把“实时代理地址”填成上面这个地址即可。
 
-### 3. 重新生成韶关线路清单
+### 3. 重新生成线路清单
 
-当你怀疑线路、站点、站序发生变化时，可以重新跑：
+重建全部城市：
+
+```bash
+node scripts/build-city-manifests.js
+```
+
+只重建某一个城市：
+
+```bash
+node scripts/build-city-manifests.js --city beijing
+```
+
+兼容旧命令，只重建韶关：
 
 ```bash
 node scripts/build-shaoguan-manifest.js
 ```
 
-脚本会更新：
+生成结果会写到：
 
 ```text
-assets/data/shaoguan-routes.json
+assets/data/manifests/
 ```
 
-设计思路很直接：
+## 城市配置方式
 
-- 先拿韶关全量线路
-- 再按线路方向拉完整站序
-- 最后把“接口原始线路名”和“界面展示线路号”拆开保存
+多城市支持不是把所有线路直接写死在前端，而是拆成两层配置：
 
-这样像 `101（马坝⇔梅村）` 这类线路，界面还能按 `101` 统一归类，不会把方向说明混进线路下拉里。
+1. `assets/data/cities.json`
+   维护城市基础信息：
+   - `slug`
+   - `name`
+   - `englishName`
+   - `cityId`
+   - `src`
+   - `weather.latitude`
+   - `weather.longitude`
+2. `assets/data/manifests/<slug>.json`
+   维护该城市的线路、方向、站序和站点 ID
+
+这样后续要再加城市，只需要：
+
+1. 在 `assets/data/cities.json` 里补一个城市项
+2. 运行 `node scripts/build-city-manifests.js --city <slug>`
+
+前端切换城市时会自动加载对应 manifest，不会一次性把 5 个城市的大清单都下载下来。
 
 ## 部署到 GitHub Pages
 
@@ -104,26 +133,18 @@ assets/data/shaoguan-routes.json
 
 把 `proxy/cloudflare-worker.js` 部署成 Worker，然后把页面里的“实时代理地址”填成 Worker 域名。
 
-这个 Worker 做的事情只有三件：
+如果你用 Wrangler，记得开启 Node 兼容模式，因为代理里用了 `node:crypto` 处理 `MD5` 和 `AES-256-ECB`。
 
-- 接收前端传来的线路、方向、站点参数
-- 生成 `cryptoSign`
-- 请求车来了接口并解密 `encryptResult`
-
-如果你用 Wrangler，记得开启 Node 兼容模式，因为代理里用了 `node:crypto` 来处理 `MD5` 和 `AES-256-ECB`。
-
-可以参考下面这个最小配置：
+可参考这个最小配置：
 
 ```toml
-name = "shaoguan-bus-pids-proxy"
+name = "city-bus-pids-proxy"
 main = "cloudflare-worker.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 ```
 
 ### 方案 B：自托管 Node 代理
-
-如果你有自己的服务器，也可以直接跑：
 
 ```bash
 node proxy/local-proxy.js
@@ -153,7 +174,7 @@ GET /api/health
 ```json
 {
   "ok": true,
-  "now": "2026-03-22T09:06:19.435Z"
+  "now": "2026-03-22T10:33:26.801Z"
 }
 ```
 
@@ -163,15 +184,15 @@ GET /api/health
 
 请求参数：
 
-- `stationId`：必填，车站 ID，例如 `0751-24`
+- `stationId`：必填，车站 ID
 - `destSId`：可选，默认 `-1`
-- `cityId`：可选，默认 `241`
-- `src`：可选，默认 `wechat_shaoguan`
+- `cityId`：建议必填，车来了城市 ID
+- `src`：建议必填，当前城市对应的来源标识
 
 示例：
 
 ```text
-GET /api/station-detail?stationId=0751-24&cityId=241&src=wechat_shaoguan
+GET /api/station-detail?stationId=010-1858&destSId=-1&cityId=027&src=wechat_shaoguan
 ```
 
 返回要点：
@@ -202,13 +223,13 @@ GET /api/station-detail?stationId=0751-24&cityId=241&src=wechat_shaoguan
 - `nextStationName`：必填
 - `lineNo`：必填
 - `targetOrder`：必填
-- `cityId`：可选，默认 `241`
-- `src`：可选，默认 `wechat_shaoguan`
+- `cityId`：建议必填，车来了城市 ID
+- `src`：建议必填，当前城市对应的来源标识
 
 示例：
 
 ```text
-GET /api/line-detail?lineId=0751131909628&lineName=7&direction=1&stationName=市一中&nextStationName=府管&lineNo=7&targetOrder=8
+GET /api/line-detail?lineId=010-26-0&lineName=26&direction=0&stationName=二里庄&nextStationName=二里庄北口&lineNo=26&targetOrder=1&cityId=027&src=wechat_shaoguan
 ```
 
 返回要点：
@@ -223,20 +244,22 @@ GET /api/line-detail?lineId=0751131909628&lineName=7&direction=1&stationName=市
 - `/api/station-detail` 是推荐查询入口
 - `/api/line-detail` 是高级/回退入口
 - 代理只做转发、签名和解密，不对业务字段二次包装
+- 多城市调用时，前端应明确传入 `cityId` 和 `src`，不要依赖代理默认值
 
 ## 界面和数据设计说明
 
 这次改造没有硬把“公交边角场景”打补丁塞进原来的列车逻辑里，而是把几个关键点重新抽象了：
 
-- 线路清单不再写死在前端，而是用生成脚本落成静态 JSON
+- 城市注册表和线路清单解耦
+- 每个城市单独生成 manifest，前端按需加载
 - 方向不再固定写成 `UP/DOWN`，而是按当前线路和车站动态生成“开往某终点 / 全部方向 / 双方向分屏”
-- 实时数据不再依赖线路全表查询，而是直接吃预生成的 `lineId + targetOrder + nextStationName`
+- 实时数据优先走 `station-detail`，只有站点接口拿不到 `stnStates` 才回退 `line-detail`
 
 这样做的好处很实际：
 
-- 线路和站点选择会更快
-- 前端结构仍然能保持和参考项目接近
-- 接口变化时只需要重新生成清单或替换代理逻辑，不用整页重写
+- 城市切换不会拖慢首屏
+- 线路和站点选择仍然保持接近参考项目的操作习惯
+- 后续新增城市时，不用重写前端结构，只要补城市配置和 manifest
 
 ## 致谢与许可
 

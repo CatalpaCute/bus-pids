@@ -37,7 +37,7 @@ async function getETA(route, station, direction) {
     return customArrivalData;
   }
 
-  const requestCombo = [route, station, direction, SETTINGS.proxyBaseUrl].join('|');
+  const requestCombo = [SETTINGS.city, route, station, direction, SETTINGS.proxyBaseUrl].join('|');
   if (etaCache.data && canUseCache(requestCombo)) {
     return etaCache.data;
   }

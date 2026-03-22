@@ -1,7 +1,6 @@
 'use strict';
 
-const WEATHER_URL =
-  'https://api.open-meteo.com/v1/forecast?latitude=24.8017&longitude=113.5970&current=temperature_2m,weather_code&timezone=Asia%2FShanghai';
+import { getCurrentCityConfig } from './static/data.js';
 
 const WEATHER_LABELS = new Map([
   [0, '晴'],
@@ -31,12 +30,19 @@ const WEATHER_LABELS = new Map([
   [86, '阵雪'],
   [95, '雷阵雨'],
   [96, '雷暴'],
-  [99, '雷暴']
+  [99, '强雷暴']
 ]);
+
+function getWeatherUrl() {
+  const city = getCurrentCityConfig();
+  const latitude = city?.weather?.latitude ?? 24.8017;
+  const longitude = city?.weather?.longitude ?? 113.597;
+  return `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=Asia%2FShanghai`;
+}
 
 export async function fetchWeatherData() {
   try {
-    const response = await fetch(WEATHER_URL, { cache: 'no-store' });
+    const response = await fetch(getWeatherUrl(), { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

@@ -86,35 +86,96 @@ const promotionData = {
   ]
 };
 
-let manifestPromise = null;
-let manifestData = null;
+let cityRegistryPromise = null;
+let cityRegistryData = null;
+let currentCitySlug = null;
+const manifestPromises = new Map();
+const manifestCache = new Map();
 
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, '').trim().toLowerCase();
 }
 
-async function loadManifest() {
-  if (manifestData) {
-    return manifestData;
+async function loadCityRegistry() {
+  if (cityRegistryData) {
+    return cityRegistryData;
   }
-  if (!manifestPromise) {
-    manifestPromise = fetch('./assets/data/shaoguan-routes.json', { cache: 'no-cache' }).then(async (response) => {
+  if (!cityRegistryPromise) {
+    cityRegistryPromise = fetch('./assets/data/cities.json', { cache: 'no-cache' }).then(async (response) => {
       if (!response.ok) {
-        throw new Error(`Failed to load route manifest: ${response.status}`);
+        throw new Error(`Failed to load city registry: ${response.status}`);
       }
       return response.json();
     });
   }
-  manifestData = await manifestPromise;
-  return manifestData;
+  cityRegistryData = await cityRegistryPromise;
+  return cityRegistryData;
+}
+
+function getCityRegistry() {
+  return cityRegistryData;
+}
+
+function getCities() {
+  return cityRegistryData?.cities || [];
+}
+
+function getDefaultCitySlug() {
+  return cityRegistryData?.defaultCity || 'shaoguan';
+}
+
+function getCityConfig(citySlug) {
+  const cities = getCities();
+  if (cities.length === 0) {
+    return null;
+  }
+  return cities.find((city) => city.slug === citySlug) || cities.find((city) => city.slug === getDefaultCitySlug()) || cities[0];
+}
+
+async function loadManifest(citySlug) {
+  await loadCityRegistry();
+  const city = getCityConfig(citySlug);
+  if (!city) {
+    throw new Error('No city config available');
+  }
+
+  if (manifestCache.has(city.slug)) {
+    currentCitySlug = city.slug;
+    return manifestCache.get(city.slug);
+  }
+
+  if (!manifestPromises.has(city.slug)) {
+    manifestPromises.set(
+      city.slug,
+      fetch(`./assets/data/manifests/${city.slug}.json`, { cache: 'no-cache' }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load route manifest for ${city.slug}: ${response.status}`);
+        }
+        return response.json();
+      })
+    );
+  }
+
+  const manifest = await manifestPromises.get(city.slug);
+  manifestCache.set(city.slug, manifest);
+  currentCitySlug = city.slug;
+  return manifest;
+}
+
+function getCurrentCitySlug() {
+  return currentCitySlug || getDefaultCitySlug();
+}
+
+function getCurrentCityConfig() {
+  return getCityConfig(getCurrentCitySlug());
 }
 
 function getManifest() {
-  return manifestData;
+  return manifestCache.get(getCurrentCitySlug()) || null;
 }
 
 function getLines() {
-  return manifestData?.lines || [];
+  return getManifest()?.lines || [];
 }
 
 function getLine(lineNo) {
@@ -130,11 +191,12 @@ function hasLine(lineNo) {
 }
 
 function getLineTitle(lineNo) {
+  const city = getCurrentCityConfig();
   const line = getLine(lineNo);
   if (!line) {
-    return '韶关公交 PIDS|Shaoguan Bus PIDS';
+    return `${city?.name || '城市'}公交 PIDS|${city?.englishName || 'City'} Bus PIDS`;
   }
-  return `${line.displayName}|Shaoguan Bus ${line.lineNo}`;
+  return `${city?.name || '城市'}公交 ${line.displayName}|${city?.englishName || 'City'} Bus ${line.displayName}`;
 }
 
 function buildRouteVisual(lineNo) {
@@ -225,7 +287,7 @@ function getDirectionOptions(lineNo, stationName) {
     options.push({
       value: 'BOTH_SPLIT',
       label: '双方向分屏',
-      hint: '上下半屏各显示一个方向',
+      hint: '上下半屏分别显示一个方向',
       badge: '分'
     });
   }
@@ -242,13 +304,17 @@ function getSelectedDirections(lineNo, stationName, selection) {
 }
 
 function ensureValidSettings(settings) {
+  if (!getCityConfig(settings.city)) {
+    settings.city = getDefaultCitySlug();
+  }
+
   const lines = getLines();
   if (lines.length === 0) {
     return;
   }
 
   if (!hasLine(settings.route)) {
-    settings.route = manifestData.defaultLineNo || lines[0].lineNo;
+    settings.route = getManifest()?.defaultLineNo || lines[0].lineNo;
   }
 
   const stationOptions = getStationOptions(settings.route);
@@ -275,6 +341,12 @@ export {
   DisplayMode,
   UIPreset,
   promotionData,
+  loadCityRegistry,
+  getCityRegistry,
+  getCities,
+  getCityConfig,
+  getCurrentCityConfig,
+  getCurrentCitySlug,
   loadManifest,
   getManifest,
   getLines,

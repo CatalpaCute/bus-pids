@@ -4,6 +4,7 @@ import SETTINGS from './settings.js';
 import {
   ArrivalEntry,
   buildRouteVisual,
+  getCurrentCityConfig,
   getSelectedDirections
 } from './data.js';
 
@@ -13,13 +14,14 @@ function normalizeBaseUrl(url) {
 
 async function fetchProxyJson(pathname, params) {
   const proxyBaseUrl = normalizeBaseUrl(SETTINGS.proxyBaseUrl);
+  const city = getCurrentCityConfig();
   if (!proxyBaseUrl) {
     throw new Error('未配置实时代理地址，GitHub Pages 版本无法直接跨域调用车来了接口。');
   }
 
   const url = new URL(`${proxyBaseUrl}${pathname}`);
-  url.searchParams.set('cityId', '241');
-  url.searchParams.set('src', 'wechat_shaoguan');
+  url.searchParams.set('cityId', city?.cityId || '241');
+  url.searchParams.set('src', city?.src || 'wechat_shaoguan');
   Object.entries(params).forEach(([key, value]) => {
     url.searchParams.set(key, value);
   });
