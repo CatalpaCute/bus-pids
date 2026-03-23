@@ -1,7 +1,7 @@
 'use strict';
 
 import ETA_CONTROLLER from './eta_controller.js';
-import SETTINGS from './static/settings.js';
+import SETTINGS, { DATA_SOURCE, isLiveDataSource } from './static/settings.js';
 import UI from './ui.js';
 import { ensureValidSettings, loadManifest } from './static/data.js';
 
@@ -18,6 +18,13 @@ function parseQuery() {
 
   if (params.has('proxy')) {
     SETTINGS.proxyBaseUrl = params.get('proxy') || '';
+  }
+
+  if (params.has('source')) {
+    const source = params.get('source') || '';
+    if (Object.values(DATA_SOURCE).includes(source)) {
+      SETTINGS.dataSource = source;
+    }
   }
 }
 
@@ -38,7 +45,7 @@ async function updateETA(force = false) {
     console.error('Failed to refresh ETA', error);
     etaData = [];
   } finally {
-    nextRefreshAt = Date.now() + (SETTINGS.dataSource === 'ONLINE' ? 15 * 1000 : 2 * 1000);
+    nextRefreshAt = Date.now() + (isLiveDataSource(SETTINGS.dataSource) ? 15 * 1000 : 2 * 1000);
     isFetching = false;
   }
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-import SETTINGS from './static/settings.js';
+import SETTINGS, { DATA_SOURCE, getResolvedProxyBaseUrl } from './static/settings.js';
 import { fetchRealtimeEntries } from './static/eta_api.js';
 import { ArrivalEntry, buildRouteVisual } from './static/data.js';
 
@@ -33,11 +33,11 @@ function canUseCache(requestCombo) {
 }
 
 async function getETA(route, station, direction) {
-  if (SETTINGS.dataSource === 'OFFLINE') {
+  if (SETTINGS.dataSource === DATA_SOURCE.OFFLINE) {
     return customArrivalData;
   }
 
-  const requestCombo = [route, station, direction, SETTINGS.proxyBaseUrl].join('|');
+  const requestCombo = [route, station, direction, SETTINGS.dataSource, getResolvedProxyBaseUrl()].join('|');
   if (etaCache.data && canUseCache(requestCombo)) {
     return etaCache.data;
   }

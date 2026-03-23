@@ -6,12 +6,13 @@ export default {
       en: 'English'
     },
     welcome: '韶关公交 PIDS 模拟屏',
-    description_1: '这个项目Fork自 HKTSS/MTR PIDS Simulator，将数据源改成了内地公交接口。',
+    description_1: '这个项目Fork自 HKTSS/MTR PIDS Simulator，将数据源改成了韶关公交接口。',
     description_2: '操作方式保持同一套逻辑：先选线路，再选站点，再决定看单方向、混排或双方向分屏。',
     description_3: 'GitHub Pages 版本需要额外配置一个代理地址才能读取实时数据。目前可选择 CzWorks 提供的API',
     disclaimer: '本项目仅供学习和个人研究使用，请不要高频抓取或用于任何违规用途。',
     enquiries: '如果只想先看界面效果，可以切到离线模式，手动填入终点、方向圆标和到站时间。',
-    oss: '参考项目与源码说明'
+    oss: '参考项目',
+    oss1: '源码说明'
   },
   settings: {
     title: '屏幕设置',
@@ -21,6 +22,7 @@ export default {
         source: {
           name: '数据来源',
           online: '在线实时',
+          onlineCzworks: '在线实时(CzWorks)',
           offline: '离线自定义'
         },
         route: '公交线路',
@@ -31,7 +33,7 @@ export default {
         proxy: {
           name: '实时代理地址',
           placeholder: '例如 https://your-worker.example.com',
-          hint: 'GitHub Pages 不能直接请求车来了接口。这里填你部署好的代理地址，页面会优先请求 /api/station-detail。'
+          hint: '这里填你部署好的代理地址，页面会优先请求 /api/station-detail。'
         },
         custom: {
           name: '离线演示数据',

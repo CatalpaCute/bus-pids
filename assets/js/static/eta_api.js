@@ -1,6 +1,6 @@
 'use strict';
 
-import SETTINGS from './settings.js';
+import { getResolvedProxyBaseUrl } from './settings.js';
 import {
   ArrivalEntry,
   buildRouteVisual,
@@ -12,7 +12,7 @@ function normalizeBaseUrl(url) {
 }
 
 async function fetchProxyJson(pathname, params) {
-  const proxyBaseUrl = normalizeBaseUrl(SETTINGS.proxyBaseUrl);
+  const proxyBaseUrl = normalizeBaseUrl(getResolvedProxyBaseUrl());
   if (!proxyBaseUrl) {
     throw new Error('未配置实时代理地址，GitHub Pages 版本无法直接跨域调用车来了接口。');
   }

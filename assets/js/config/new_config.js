@@ -2,7 +2,7 @@
 
 import LANG_EN from './lang/en.js';
 import LANG_ZH from './lang/zh.js';
-import SETTINGS from '../static/settings.js';
+import SETTINGS, { DATA_SOURCE } from '../static/settings.js';
 import {
   DisplayMode,
   promotionData,
@@ -46,6 +46,8 @@ const app = createApp({
     const selectedLine = computed(() => getLine(routeReference.value));
     const stationOptions = computed(() => getStationOptions(routeReference.value));
     const directionOptions = computed(() => getDirectionOptions(routeReference.value, stationReference.value));
+    const usesFixedProxySource = computed(() => dataSourceReference.value === DATA_SOURCE.ONLINE_CZWORKS);
+    const isLiveSource = computed(() => dataSourceReference.value !== DATA_SOURCE.OFFLINE);
 
     function syncDirection() {
       const options = directionOptions.value;
@@ -116,6 +118,9 @@ const app = createApp({
       stationReference,
       directionReference,
       dataSourceReference,
+      usesFixedProxySource,
+      isLiveSource,
+      DATA_SOURCE,
       firstTrainCutoffReference,
       proxyBaseUrlReference,
       toggleFullscreen,

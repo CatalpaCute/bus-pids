@@ -47,6 +47,8 @@
             <p>{{ $t('intro.disclaimer') }}</p>
             <p>{{ $t('intro.enquiries') }}</p>
             <a href="https://github.com/HKTSS/mtr-pids">{{ $t('intro.oss') }}</a>
+            <br>
+            <a href="https://github.com/CatalpaCute/bus-pids">{{ $t('intro.oss1') }}</a>
         </section>
         <section class="settings">
             <h1>{{ $t('settings.title') }}</h1>
@@ -56,13 +58,14 @@
                     <div>
                         <label for="source">{{ $t('settings.sections.data.source.name') }}</label>
                         <select id="source" v-model="dataSourceReference">
-                            <option value="ONLINE">{{ $t('settings.sections.data.source.online') }}</option>
-                            <option value="OFFLINE">{{ $t('settings.sections.data.source.offline') }}</option>
+                            <option :value="DATA_SOURCE.ONLINE">{{ $t('settings.sections.data.source.online') }}</option>
+                            <option :value="DATA_SOURCE.ONLINE_CZWORKS">{{ $t('settings.sections.data.source.onlineCzworks') }}</option>
+                            <option :value="DATA_SOURCE.OFFLINE">{{ $t('settings.sections.data.source.offline') }}</option>
                         </select>
                     </div>
 
-                    <div v-if="dataSourceReference == 'ONLINE'">
-                        <div>
+                    <div v-if="isLiveSource">
+                        <div v-if="!usesFixedProxySource">
                             <label for="proxy-base">{{ $t('settings.sections.data.proxy.name') }}</label>
                             <input id="proxy-base" name="proxy-base" type="url" v-model="proxyBaseUrlReference"
                                 :placeholder="$t('settings.sections.data.proxy.placeholder')">

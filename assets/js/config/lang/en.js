@@ -6,12 +6,13 @@ export default {
       en: 'English'
     },
     welcome: 'Shaoguan Bus PIDS Simulator',
-    description_1: 'This project studies the HKTSS MTR PIDS Simulator and swaps its data layer to the Shaoguan bus Chelaile H5 API.',
+    description_1: 'This project studies the HKTSS MTR PIDS Simulator and swaps its data layer to the Shaoguan bus API.',
     description_2: 'The interaction flow stays the same: choose a route, choose a stop, then choose one direction, mixed directions, or split-screen directions.',
     description_3: 'The Chelaile API does not expose browser CORS, so the GitHub Pages build needs a lightweight proxy URL for live data.',
     disclaimer: 'For personal learning only. Please do not scrape aggressively or use it for any improper purpose.',
     enquiries: 'You can switch to offline mode if you only want to preview the screen or record a demo without live requests.',
-    oss: 'Reference project and source notes'
+    oss: 'Reference project',
+    oss1: 'Source notes'
   },
   settings: {
     title: 'Display Settings',
@@ -21,6 +22,7 @@ export default {
         source: {
           name: 'Source',
           online: 'Live data',
+          onlineCzworks: 'Live data (by CzWorks)',
           offline: 'Offline mock'
         },
         route: 'Bus route',
