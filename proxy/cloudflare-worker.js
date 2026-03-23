@@ -14,7 +14,10 @@ export default {
       return json({ ok: true, now: new Date().toISOString() });
     }
 
-    if (url.pathname !== '/api/line-detail' && url.pathname !== '/api/station-detail') {
+    if (
+      url.pathname !== '/api/line-detail' &&
+      url.pathname !== '/api/station-detail'
+    ) {
       return json({ error: 'Not Found' }, 404);
     }
 
@@ -24,11 +27,16 @@ export default {
         if (!stationId) {
           return json({ error: 'Missing query parameter: stationId' }, 400);
         }
+
         const detail = await callEncryptedHandler(
           'bus/stop!encryptedStnDetail.action',
-          { stationId, destSId: url.searchParams.get('destSId') || '-1' },
+          {
+            stationId,
+            destSId: url.searchParams.get('destSId') || '-1'
+          },
           url.searchParams
         );
+
         return json(detail);
       }
 
@@ -48,15 +56,22 @@ export default {
         }
       }
 
-      const payload = Object.fromEntries(required.map((key) => [key, url.searchParams.get(key)]));
+      const payload = Object.fromEntries(
+        required.map((key) => [key, url.searchParams.get(key)])
+      );
+
       const detail = await callEncryptedHandler(
         'bus/line!encryptedLineDetail.action',
         payload,
         url.searchParams
       );
+
       return json(detail);
     } catch (error) {
-      return json({ error: error.message || 'Unhandled worker error' }, 500);
+      return json(
+        { error: error.message || 'Unhandled worker error' },
+        500
+      );
     }
   }
 };
@@ -90,7 +105,9 @@ function serialize(payload) {
 }
 
 function randomBrowserId() {
-  return `browser_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `browser_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
 }
 
 async function md5(value) {
@@ -99,15 +116,24 @@ async function md5(value) {
 
 async function decryptAes(base64Text) {
   const key = Buffer.from('422556651C7F7B2B5C266EED06068230', 'utf8');
-  const decipher = createDecipheriv('aes-256-ecb', key, null);
+
+  // Cloudflare Workers 下 aes-256-ecb 这里不要传 null，传空 Buffer 更稳
+  const decipher = createDecipheriv('aes-256-ecb', key, Buffer.alloc(0));
+
   decipher.setAutoPadding(true);
-  return Buffer.concat([decipher.update(base64Text, 'base64'), decipher.final()]).toString('utf8');
+
+  return Buffer.concat([
+    decipher.update(base64Text, 'base64'),
+    decipher.final()
+  ]).toString('utf8');
 }
 
 async function callEncryptedHandler(pathname, payload, query) {
   const cryptoSign = await md5(`${serialize(payload)}qwihrnbtmj`);
   const upstreamUrl = new URL(`https://web.chelaile.net.cn/api/${pathname}`);
+
   const userId = query.get('userId') || randomBrowserId();
+
   const shared = {
     cityId: query.get('cityId') || '241',
     s: 'h5',
@@ -119,7 +145,11 @@ async function callEncryptedHandler(pathname, payload, query) {
     sign: '1'
   };
 
-  [...Object.entries(payload), ...Object.entries(shared), ['cryptoSign', cryptoSign]].forEach(([key, value]) => {
+  [
+    ...Object.entries(payload),
+    ...Object.entries(shared),
+    ['cryptoSign', cryptoSign]
+  ].forEach(([key, value]) => {
     upstreamUrl.searchParams.set(key, value);
   });
 
@@ -133,13 +163,17 @@ async function callEncryptedHandler(pathname, payload, query) {
   });
 
   const raw = await upstream.text();
+
   if (!upstream.ok) {
     throw new Error(`Upstream error ${upstream.status}: ${raw.slice(0, 300)}`);
   }
 
   const wrapped = JSON.parse(stripMarkers(raw));
+
   if (wrapped?.jsonr?.status !== '00') {
-    throw new Error(wrapped?.jsonr?.errmsg || wrapped?.jsonr?.status || 'Unknown upstream status');
+    throw new Error(
+      wrapped?.jsonr?.errmsg || wrapped?.jsonr?.status || 'Unknown upstream status'
+    );
   }
 
   const encryptResult = wrapped?.jsonr?.data?.encryptResult;
