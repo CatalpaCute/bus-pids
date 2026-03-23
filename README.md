@@ -2,16 +2,17 @@
 
 这是一个参考 [HKTSS/mtr-pids](https://github.com/HKTSS/mtr-pids) 视觉结构改造出来的韶关公交到站屏项目。
 
-页面层继续沿用“顶部状态栏 + 提示页 + 四行到站信息 + 配置浮层”这套交互方式，但底层数据已经改成韶关公交车来了 H5 接口，并把线路和站点选择改成更适合公交场景的方式：
+页面设计保持港铁的 PIDS 屏幕设计，继续沿用“顶部状态栏 + 提示页 + 四行到站信息 + 配置浮层”这套交互方式，底层数据适配韶关公交 H5 接口，线路和站点选择改成了更适合公交场景的方式：
 
 - 先选公交线路号
 - 再选车站名
 - 再选单方向、全部方向或双方向分屏
+- 注意：起点站或终点站往另一方向的车辆可能一直为 99 分钟，这是正常现象，因为接口中没有发车站的信息。
 
 ## 项目结构
 
 - `index.html`
-  前端入口，适合直接托管到 GitHub Pages。
+  前端入口，可直接托管到 GitHub Pages。
 - `assets/data/shaoguan-routes.json`
   线路静态清单，由脚本生成，负责驱动线路、站点、方向下拉。
 - `assets/js/static/data.js`
@@ -19,23 +20,23 @@
 - `assets/js/static/eta_api.js`
   实时数据入口，负责调用代理并转换成屏幕渲染所需的统一结构。
 - `proxy/local-proxy.js`
-  本地 Node 代理，适合开发和自测。
+  本地 Node 代理，适合本地开发、测试。
 - `proxy/cloudflare-worker.js`
-  Cloudflare Worker 版本代理，适合给 GitHub Pages 提供线上实时数据。
+  Cloudflare Worker 版本代理，适合给 GitHub Pages 提供完全线上实时数据。
 - `scripts/build-shaoguan-manifest.js`
-  从车来了接口拉全量线路和站序，重新生成韶关线路清单。
+  从接口拉全量线路和站序，重新生成韶关线路清单。
 
 ## 为什么需要代理
 
-车来了 H5 接口本身没有开放浏览器跨域头，所以：
+很多接口本身没有开放浏览器跨域头，所以：
 
 - GitHub Pages 可以托管前端页面
-- 但 GitHub Pages 里的浏览器代码不能直接请求 `web.chelaile.net.cn`
+- 但 GitHub Pages 里的浏览器代码不能直接请求 API
 
 所以这个项目把实时链路拆成了两层：
 
 1. GitHub Pages 托管静态页面和线路清单
-2. 一个很薄的代理负责转发 `encryptedLineDetail`、补请求头、生成签名、解密返回体
+2. 使用 Cloudflare Workers 代理，负责转发 `encryptedLineDetail`、补请求头、生成签名、解密返回体
 
 页面配置里的“实时代理地址”填的就是这个代理服务根地址，前端会请求：
 
@@ -43,15 +44,13 @@
 <你的代理地址>/api/station-detail
 ```
 
-## 本地运行
+## 本地运行示例
 
 ### 1. 启动静态页面
 
 ```bash
 python -m http.server 4173
 ```
-
-或任何你习惯的静态服务器都可以。
 
 ### 2. 启动本地代理
 
@@ -62,14 +61,14 @@ node proxy/local-proxy.js
 默认监听：
 
 ```text
-http://127.0.0.1:8787
+http://127.0.0.1:8788
 ```
 
 页面里把“实时代理地址”填成上面这个地址即可。
 
 ### 3. 重新生成韶关线路清单
 
-当你怀疑线路、站点、站序发生变化时，可以重新跑：
+当线路、站点、站序发生变化时，可以重新跑：
 
 ```bash
 node scripts/build-shaoguan-manifest.js
@@ -81,19 +80,19 @@ node scripts/build-shaoguan-manifest.js
 assets/data/shaoguan-routes.json
 ```
 
-设计思路很直接：
+设计思路很简单：
 
-- 先拿韶关全量线路
+- 先爬取全量线路
 - 再按线路方向拉完整站序
-- 最后把“接口原始线路名”和“界面展示线路号”拆开保存
+- 最后将“接口原始线路名”和“界面展示线路号”做好排序，拆开保存
 
 这样像 `101（马坝⇔梅村）` 这类线路，界面还能按 `101` 统一归类，不会把方向说明混进线路下拉里。
 
 ## 部署到 GitHub Pages
 
-仓库已经附带 GitHub Pages 工作流：
+仓库已经附带 GitHub Pages 工作流(Jekyll)：
 
-- 推送到 `main` 分支后自动部署静态页面
+- 推送到 main 分支后自动部署静态页面
 - 页面内容直接来自仓库根目录
 
 首次启用时只要在 GitHub 仓库设置里打开 Pages，并选择 `GitHub Actions` 作为来源。
@@ -108,18 +107,9 @@ assets/data/shaoguan-routes.json
 
 - 接收前端传来的线路、方向、站点参数
 - 生成 `cryptoSign`
-- 请求车来了接口并解密 `encryptResult`
+- 请求接口并解密 `encryptResult`
 
-如果你用 Wrangler，记得开启 Node 兼容模式，因为代理里用了 `node:crypto` 来处理 `MD5` 和 `AES-256-ECB`。
-
-可以参考下面这个最小配置：
-
-```toml
-name = "shaoguan-bus-pids-proxy"
-main = "cloudflare-worker.js"
-compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
-```
+务必开启 Node 兼容模式，即 Cloudflare 中`设置 - 运行时`的兼容性标志需要添加`nodejs_compat`。因为代理里用了 `node:crypto` 来处理 `MD5` 和 `AES-256-ECB`。
 
 ### 方案 B：自托管 Node 代理
 
@@ -129,114 +119,155 @@ compatibility_flags = ["nodejs_compat"]
 node proxy/local-proxy.js
 ```
 
-然后把这个服务挂到公网。
+然后把这个服务挂到公网调用，在`实时代理地址`中输入即可。如需在`数据来源`栏中加入自己的数据源，只需要修改setting.js。
 
-## 代理接口说明
+## PIDS 显示所需接口清单
 
-如果你准备把代理单独开放成接口服务，建议至少保留下面 3 个路由。
+这一节专门写给需要自己适配代理的人看。
 
-### `GET /api/health`
+仓库里的 `proxy/cloudflare-worker.js` 可能会为了公开发布而暂时移除上游平台、签名算法、加密字段名或请求头细节，所以不要把它当成“开箱即用的完整实现”。真正需要对齐的是前端当前这份接口契约，代码依据在：
 
-用途：
+- `assets/js/static/eta_api.js`
+- `assets/js/static/data.js`
+- `assets/data/shaoguan-routes.json`
 
-- 健康检查
-- 给前端确认代理是否在线
+只要你的代理能稳定返回下面这些字段，PIDS 屏幕就能正常显示；至于你背后接的是哪个公交实时源、如何签名、是否需要解密，都是代理内部实现细节。
 
-示例：
+### 1. 路线静态清单
+
+前端启动后会先读取：
 
 ```text
-GET /api/health
+./assets/data/shaoguan-routes.json
 ```
 
-返回示例：
+最少需要满足这些结构：
 
 ```json
 {
-  "ok": true,
-  "now": "2026-03-22T09:06:19.435Z"
+  "defaultLineNo": "x",
+  "lines": [
+    {
+      "lineNo": "x",
+      "displayName": "x路",
+      "color": "#0f5c87",
+        //color按你喜欢，大部分城市公交都没有标识色吧（？
+      "directions": [
+        {
+          "id": "7-0",
+          "lineId": "0751xxxxxxxx",
+          "lineName": "x",
+          "lineNo": "x",
+          "direction": 0,
+          "directionLabel": "上行",
+          "endStation": "韶关站",
+          "badge": "上",
+          "stations": [
+            {
+              "sId": "0xxx-xx",
+              "sn": "韶关东站",
+              "order": 8
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 ```
 
-### `GET /api/station-detail`
+这里最关键的是：
 
-这是当前前端实时查询的主接口，优先使用。
+- `lines[].lineNo` 和 `displayName` 用来做线路下拉
+- `directions[]` 用来生成方向下拉和实时查询参数
+- `stations[].sId`、`sn`、`order` 分别用于查实时、显示站名、判断站序
 
-请求参数：
+### 2. 主实时接口 `GET /api/station-detail`
 
-- `stationId`：必填，车站 ID，例如 `0751-24`
-- `destSId`：可选，默认 `-1`
-- `cityId`：可选，默认 `241`
-- `src`：可选，默认 `wechat_shaoguan`
+这是 PIDS 正常显示时优先调用的接口。前端固定会传：
 
-示例：
+- `stationId`
+- `destSId=-1`
+- `cityId=241`
 
-```text
-GET /api/station-detail?stationId=0751-24&cityId=241&src=wechat_shaoguan
+前端真正依赖的返回结构最少如下：
+
+```json
+{
+  "lines": [
+    {
+      "line": {
+        "lineId": ""
+      },
+      "stnStates": [
+        {
+          "busId": "bus-001",
+          "licence": "粤F12345",
+            //接口提供，如果没有也不影响PIDS渲染
+          "value": "3",
+          "travelTime": "180",
+          "arrivalTime": "1760000000000"
+        }
+      ]
+    }
+  ]
+}
 ```
 
-返回要点：
+前端会这样使用这些字段：
 
-- 原始车来了 `encryptedStnDetail` 解密后的 JSON
-- `lines[].line`：线路和方向基础信息
-- `lines[].targetStation`：当前站在该方向下的站序
-- `lines[].nextStation`：下一站
-- `lines[].stnStates[]`：多班车到站信息
+- `lines[].line.lineId`：和静态清单里的 `direction.lineId` 对上，筛出当前方向的数据
+- `lines[].stnStates[]`：直接生成到站行
+- `stnStates[].value`：预计还有多少分钟到站
+- `stnStates[].travelTime`：如果没有绝对时间，就用它推算
+- `stnStates[].arrivalTime`：有的话优先显示更准确的绝对到站时间
+- `stnStates[].busId`、`licence`：当前主要用于内部元数据和调试，不参与主界面排版，但建议保留
 
-其中最关键的是 `stnStates[]`：
+### 3. 回退接口 `GET /api/line-detail`
 
-- `value`：分钟数
-- `travelTime`：秒
-- `arrivalTime`：预计到站时间戳
-- `busId`：车辆标识
+当前端发现 `/api/station-detail` 里某个方向拿不到 `stnStates` 时，会自动回退请求这个接口。前端会传：
 
-### `GET /api/line-detail`
+- `lineId`
+- `lineName`
+- `direction`
+- `stationName`
+- `nextStationName`
+- `lineNo`
+- `targetOrder`
+- `cityId=241`
+- `src=wechat_shaoguan`
 
-这是备用接口，当前前端只在站点接口拿不到 `stnStates` 时才回退调用。
+前端真正依赖的最小返回结构如下：
 
-请求参数：
-
-- `lineId`：必填
-- `lineName`：必填
-- `direction`：必填
-- `stationName`：必填
-- `nextStationName`：必填
-- `lineNo`：必填
-- `targetOrder`：必填
-- `cityId`：可选，默认 `241`
-- `src`：可选，默认 `wechat_shaoguan`
-
-示例：
-
-```text
-GET /api/line-detail?lineId=0751131909628&lineName=7&direction=1&stationName=市一中&nextStationName=府管&lineNo=7&targetOrder=8
+```json
+{
+  "buses": [
+    {
+      "busId": "bus-001",
+      "licence": "粤F12345",
+      "order": "6",
+      "specialOrder": "6",
+      "travelTime": "180"
+    }
+  ]
+}
 ```
 
-返回要点：
+回退逻辑会这样处理：
 
-- 原始车来了 `encryptedLineDetail` 解密后的 JSON
-- `buses[]`：车辆位置和状态
-- `line`：线路信息
-- `stations[]`：完整站序
+- 用 `order` 或 `specialOrder` 和 `targetOrder` 比较，找离当前站最近的车
+- 用 `travelTime` 换算分钟数并补成 ETA
+- 最多取当前画面需要的前几班车，不要求你在代理层二次裁剪
 
-建议对外说明：
+### 4. 前端适配约束
 
-- `/api/station-detail` 是推荐查询入口
-- `/api/line-detail` 是高级/回退入口
-- 代理只做转发、签名和解密，不对业务字段二次包装
+如需适配其他城市，可能需要重写代理，请额外注意这几个约束：
 
-## 界面和数据设计说明
-
-这次改造没有硬把“公交边角场景”打补丁塞进原来的列车逻辑里，而是把几个关键点重新抽象了：
-
-- 线路清单不再写死在前端，而是用生成脚本落成静态 JSON
-- 方向不再固定写成 `UP/DOWN`，而是按当前线路和车站动态生成“开往某终点 / 全部方向 / 双方向分屏”
-- 实时数据不再依赖线路全表查询，而是直接吃预生成的 `lineId + targetOrder + nextStationName`
-
-这样做的好处很实际：
-
-- 线路和站点选择会更快
-- 前端结构仍然能保持和参考项目接近
-- 接口变化时只需要重新生成清单或替换代理逻辑，不用整页重写
+- 前端默认请求相对路径 `/api/station-detail` 和 `/api/line-detail`，所以代理根地址后面要能直接接这两个路由
+- 返回体字段名建议保持和上面一致，否则你还要同步改 `assets/js/static/eta_api.js`
+- `/api/station-detail` 是主入口，稳定性优先级应该高于 `/api/line-detail`
+- `/api/line-detail` 只承担兜底，不建议在代理层做和界面强绑定的二次包装
+- 如果你替换了数据源平台，只要能产出同样的字段语义，PIDS 前端不关心底层来自哪个服务
 
 ## 致谢与许可
 
